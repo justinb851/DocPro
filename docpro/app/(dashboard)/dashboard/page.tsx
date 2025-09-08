@@ -78,7 +78,7 @@ export default async function DashboardPage() {
           <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-2">
             <a
-              href="/documents/new"
+              href="/documents/upload"
               className="block p-3 rounded-lg hover:bg-accent transition-colors"
             >
               <div className="flex items-center gap-3">

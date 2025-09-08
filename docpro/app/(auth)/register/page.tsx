@@ -55,7 +55,28 @@ export default function RegisterPage() {
 
       if (signUpError) {
         setError(signUpError.message)
-      } else if (authData.user) {
+        return
+      }
+
+      if (authData.user) {
+        // Complete user onboarding by creating organization and user records
+        const onboardResponse = await fetch('/api/auth/onboard', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            organizationName: formData.organizationName,
+            fullName: formData.fullName,
+          }),
+        })
+
+        if (!onboardResponse.ok) {
+          const errorData = await onboardResponse.json()
+          setError(errorData.error || 'Failed to complete registration')
+          return
+        }
+
         setSuccess(true)
         setTimeout(() => {
           router.push('/dashboard')
