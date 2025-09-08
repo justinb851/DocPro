@@ -7,6 +7,7 @@ export async function createDocument(data: {
   description?: string
   category?: string
   tags?: string[]
+  repositoryId: string
   orgId: string
   createdBy: string
 }): Promise<Document> {
@@ -20,8 +21,10 @@ export async function createDocument(data: {
       description: data.description,
       category: data.category,
       tags: data.tags || [],
+      repository_id: data.repositoryId,
       org_id: data.orgId,
       created_by: data.createdBy,
+      status: 'draft'
     })
     .select()
     .single()
@@ -103,6 +106,33 @@ export async function getDocumentsByOrganization(orgId: string): Promise<(Docume
   if (error) {
     console.error('Error fetching documents:', error)
     throw new Error(`Failed to fetch documents: ${error.message}`)
+  }
+
+  return data || []
+}
+
+export async function getDocumentsByRepository(
+  repositoryId: string,
+  orgId: string
+): Promise<(Document & {
+  current_version?: DocumentVersion
+  versions_count?: number
+})[]> {
+  const supabase = createAdminClient()
+  
+  const { data, error } = await supabase
+    .from('documents')
+    .select(`
+      *,
+      current_version:document_versions!fk_current_version(*)
+    `)
+    .eq('repository_id', repositoryId)
+    .eq('org_id', orgId)
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching documents by repository:', error)
+    throw new Error(`Failed to fetch documents by repository: ${error.message}`)
   }
 
   return data || []

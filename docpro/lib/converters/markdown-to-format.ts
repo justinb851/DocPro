@@ -63,14 +63,15 @@ export async function convertMarkdownToWordHtml(markdown: string): Promise<strin
 // Server-side Word document generation
 export async function downloadAsWord(title: string, markdown: string, description?: string): Promise<Buffer> {
   try {
-    // For now, create a simple RTF document that can be opened by Word
-    // This is a basic RTF format that Word can read
-    const rtfContent = convertMarkdownToRtf(title, markdown, description)
-    
-    return Buffer.from(rtfContent, 'utf8')
+    // Generate proper .docx file
+    const { generateDocxFromMarkdown } = await import('./docx-generator')
+    return await generateDocxFromMarkdown(title, markdown, description)
   } catch (error) {
     console.error('Error generating Word document:', error)
-    throw new Error('Failed to generate Word document')
+    // Fallback to RTF if docx generation fails
+    console.warn('Falling back to RTF format')
+    const rtfContent = convertMarkdownToRtf(title, markdown, description)
+    return Buffer.from(rtfContent, 'utf8')
   }
 }
 

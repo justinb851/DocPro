@@ -30,6 +30,7 @@ export async function createDocumentFromFile(
   file: File,
   metadata: DocumentCreationData,
   orgId: string,
+  repositoryId: string,
   userId: string
 ): Promise<DocumentUploadResult> {
   try {
@@ -48,6 +49,7 @@ export async function createDocumentFromFile(
       description: metadata.description,
       category: metadata.category,
       tags: metadata.tags,
+      repositoryId,
       orgId,
       createdBy: userId,
     })

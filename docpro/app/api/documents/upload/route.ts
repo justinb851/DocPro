@@ -137,10 +137,18 @@ export async function POST(request: NextRequest) {
     const description = formData.get('description') as string
     const category = formData.get('category') as string
     const tags = formData.get('tags') as string
+    const repositoryId = formData.get('repositoryId') as string
 
     if (!file) {
       return NextResponse.json(
         { error: 'No file provided' },
+        { status: 400 }
+      )
+    }
+
+    if (!repositoryId) {
+      return NextResponse.json(
+        { error: 'Repository ID is required' },
         { status: 400 }
       )
     }
@@ -189,6 +197,7 @@ export async function POST(request: NextRequest) {
       file,
       metadata,
       userRecord.org_id,
+      repositoryId,
       user.id
     )
 

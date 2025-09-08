@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
-import { FileText, GitBranch, Users, TrendingUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { FileText, GitBranch, Users, TrendingUp, FolderOpen, Plus } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -8,10 +10,10 @@ export default async function DashboardPage() {
 
   // In a real app, these would be fetched from the database
   const stats = {
+    totalRepositories: 0,
     totalDocuments: 0,
     activeProposals: 0,
     teamMembers: 1,
-    recentActivity: 0,
   }
 
   return (
@@ -24,6 +26,18 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <FolderOpen className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Repositories</p>
+              <p className="text-2xl font-bold">{stats.totalRepositories}</p>
+            </div>
+          </div>
+        </Card>
+
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -77,34 +91,41 @@ export default async function DashboardPage() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-2">
-            <a
-              href="/documents/upload"
-              className="block p-3 rounded-lg hover:bg-accent transition-colors"
-            >
+            <Link href="/repositories">
+              <div className="block p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <FolderOpen className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Browse Repositories</p>
+                    <p className="text-sm text-muted-foreground">
+                      View and manage document repositories
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+            <div className="block p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer">
               <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-primary" />
+                <Plus className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="font-medium">Upload Document</p>
+                  <p className="font-medium">Create Repository</p>
                   <p className="text-sm text-muted-foreground">
-                    Add a new policy or procedure
+                    Create a new repository for organizing documents
                   </p>
                 </div>
               </div>
-            </a>
-            <a
-              href="/proposals/new"
-              className="block p-3 rounded-lg hover:bg-accent transition-colors"
-            >
+            </div>
+            <div className="block p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer">
               <div className="flex items-center gap-3">
                 <GitBranch className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="font-medium">Create Proposal</p>
+                  <p className="font-medium">Review Proposals</p>
                   <p className="text-sm text-muted-foreground">
-                    Propose changes to existing documents
+                    Review and approve document changes
                   </p>
                 </div>
               </div>
-            </a>
+            </div>
           </div>
         </Card>
 

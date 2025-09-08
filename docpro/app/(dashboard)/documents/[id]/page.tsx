@@ -1,15 +1,16 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDocument } from '@/hooks/use-documents'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Download, Edit, History, FileText, Calendar, User, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Download, Edit, History, FileText, Calendar, User, RefreshCw, Upload } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import VersionUpload from '@/components/documents/version-upload'
 
 interface DocumentPageProps {
   params: Promise<{ id: string }>
@@ -19,6 +20,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const { id } = use(params)
   const router = useRouter()
   const { data: document, isLoading, error } = useDocument(id)
+  const [showVersionUpload, setShowVersionUpload] = useState(false)
 
   const handleDownload = async (format: string = 'original') => {
     try {
@@ -43,12 +45,12 @@ export default function DocumentPage({ params }: DocumentPageProps) {
       // Create blob and download
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
+      const link = window.document.createElement('a')
       link.href = url
       link.download = filename
-      document.body.appendChild(link)
+      window.document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
+      window.document.body.removeChild(link)
       URL.revokeObjectURL(url)
       
     } catch (error) {
@@ -64,8 +66,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   }
 
   const handleViewVersions = () => {
-    // TODO: Navigate to versions page
-    console.log('View versions:', id)
+    router.push(`/documents/${id}/versions`)
   }
 
   const handleReprocess = async () => {
@@ -87,6 +88,13 @@ export default function DocumentPage({ params }: DocumentPageProps) {
       alert(`Failed to reprocess document: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
+
+  const handleVersionUploadSuccess = () => {
+    setShowVersionUpload(false)
+    // Refresh the page to show the new version
+    window.location.reload()
+  }
+
 
   if (isLoading) {
     return (
@@ -180,6 +188,10 @@ export default function DocumentPage({ params }: DocumentPageProps) {
               <Download className="h-4 w-4 mr-2" />
               Download
             </Button>
+            <Button variant="outline" onClick={() => setShowVersionUpload(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload New Version
+            </Button>
             <Button onClick={handleEdit}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
@@ -248,7 +260,17 @@ export default function DocumentPage({ params }: DocumentPageProps) {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Current Version</label>
-                <p className="text-sm">Version {document.current_version?.version_number || 1}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm">Version {document.current_version?.version_number || 1}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleViewVersions}
+                  >
+                    <History className="h-3 w-3 mr-1" />
+                    View All
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -292,6 +314,40 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           </Card>
         </div>
       </div>
+
+      {/* Version Upload Modal */}
+      {showVersionUpload && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            maxWidth: '768px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <VersionUpload
+              documentId={id}
+              documentTitle={document.title}
+              currentVersion={document.current_version?.version_number || 1}
+              onSuccess={handleVersionUploadSuccess}
+              onCancel={() => setShowVersionUpload(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

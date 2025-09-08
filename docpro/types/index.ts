@@ -18,14 +18,29 @@ export interface User {
   updated_at: string
 }
 
+export interface Repository {
+  id: string
+  org_id: string
+  name: string
+  description?: string
+  category?: string
+  status: 'active' | 'archived'
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Document {
   id: string
   org_id: string
+  repository_id: string
   title: string
   description?: string
   category?: string
   tags?: string[]
   current_version_id?: string
+  production_version_id?: string
+  status: 'draft' | 'in_review' | 'approved' | 'production'
   created_by: string
   created_at: string
   updated_at: string
@@ -38,6 +53,7 @@ export interface DocumentVersion {
   content_markdown: string
   content_html?: string
   change_summary?: string
+  status: 'draft' | 'production' | 'archived'
   author_id: string
   created_at: string
 }

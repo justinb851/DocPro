@@ -1,11 +1,19 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Download, MoreVertical, Calendar, User } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { FileText, Download, MoreVertical, Calendar, User, FolderOpen } from 'lucide-react'
+import { MoveToRepositoryDialog } from './move-to-repository-dialog'
 import type { Document, DocumentVersion } from '@/types'
 
 interface DocumentWithVersion extends Document {
@@ -18,10 +26,23 @@ interface DocumentCardProps {
 }
 
 export function DocumentCard({ document }: DocumentCardProps) {
+  const [showMoveDialog, setShowMoveDialog] = useState(false)
+
   const handleDownload = (e: React.MouseEvent) => {
     e.preventDefault()
     // TODO: Implement download functionality
     console.log('Download document:', document.id)
+  }
+
+  const handleMoveToRepository = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setShowMoveDialog(true)
+  }
+
+  const handleMoveSuccess = () => {
+    setShowMoveDialog(false)
+    // TODO: Refresh documents list or show success message
+    window.location.reload()
   }
 
   return (
@@ -48,13 +69,27 @@ export function DocumentCard({ document }: DocumentCardProps) {
               )}
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-shrink-0"
-          >
-            <MoreVertical className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-shrink-0"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleMoveToRepository}>
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Move to Repository
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
 
@@ -113,6 +148,14 @@ export function DocumentCard({ document }: DocumentCardProps) {
           </div>
         </div>
       </CardContent>
+
+      <MoveToRepositoryDialog
+        open={showMoveDialog}
+        onOpenChange={setShowMoveDialog}
+        documentId={document.id}
+        documentTitle={document.title}
+        onSuccess={handleMoveSuccess}
+      />
     </Card>
   )
 }

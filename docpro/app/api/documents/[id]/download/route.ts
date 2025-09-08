@@ -56,21 +56,88 @@ export async function GET(
       )
     }
 
+    // Verify user has access to this document's organization
+    if (document.org_id !== userRecord.org_id) {
+      return NextResponse.json(
+        { error: 'Access denied to this document' },
+        { status: 403 }
+      )
+    }
+
     const filename = document.title.replace(/[^a-zA-Z0-9\s.-]/g, '_')
 
     switch (format) {
       case 'original': {
-        // Download the original uploaded file
-        // We need to get the original file path from storage
-        // For now, we'll return the markdown version as a fallback
-        const markdown = document.current_version?.content_markdown || ''
-        
-        return new NextResponse(markdown, {
-          headers: {
-            'Content-Type': 'text/markdown',
-            'Content-Disposition': `attachment; filename="${filename}.md"`,
-          },
-        })
+        // Try to download the original uploaded file from storage
+        try {
+          const storageClient = adminClient.storage
+          const documentPath = `${document.org_id}/${id}`
+          
+          // List files in the document folder to find the original
+          const { data: files, error: listError } = await storageClient
+            .from('documents')
+            .list(documentPath, {
+              limit: 100,
+              offset: 0
+            })
+
+          if (listError || !files || files.length === 0) {
+            // Fallback to markdown if no original file found
+            const markdown = document.current_version?.content_markdown || ''
+            return new NextResponse(markdown, {
+              headers: {
+                'Content-Type': 'text/markdown',
+                'Content-Disposition': `attachment; filename="${filename}.md"`,
+              },
+            })
+          }
+
+          // Find the original file (should have timestamp prefix)
+          const originalFile = files.find(f => 
+            f.name.toLowerCase().endsWith('.pdf') || 
+            f.name.toLowerCase().endsWith('.docx') ||
+            f.name.toLowerCase().endsWith('.doc')
+          )
+          
+          if (originalFile) {
+            const filePath = `${documentPath}/${originalFile.name}`
+            const { data: fileData, error: downloadError } = await storageClient
+              .from('documents')
+              .download(filePath)
+
+            if (!downloadError && fileData) {
+              const buffer = await fileData.arrayBuffer()
+              const originalFileName = originalFile.name.replace(/^\d+_/, '') // Remove timestamp prefix
+              
+              return new NextResponse(buffer, {
+                headers: {
+                  'Content-Type': fileData.type || 'application/octet-stream',
+                  'Content-Disposition': `attachment; filename="${originalFileName}"`,
+                },
+              })
+            }
+          }
+          
+          // Fallback to markdown if original file couldn't be downloaded
+          const markdown = document.current_version?.content_markdown || ''
+          return new NextResponse(markdown, {
+            headers: {
+              'Content-Type': 'text/markdown',
+              'Content-Disposition': `attachment; filename="${filename}.md"`,
+            },
+          })
+          
+        } catch (error) {
+          console.error('Error downloading original file:', error)
+          // Fallback to markdown
+          const markdown = document.current_version?.content_markdown || ''
+          return new NextResponse(markdown, {
+            headers: {
+              'Content-Type': 'text/markdown',
+              'Content-Disposition': `attachment; filename="${filename}.md"`,
+            },
+          })
+        }
       }
 
       case 'markdown': {
@@ -142,8 +209,8 @@ export async function GET(
           
           return new NextResponse(wordBuffer, {
             headers: {
-              'Content-Type': 'application/rtf',
-              'Content-Disposition': `attachment; filename="${filename}.rtf"`,
+              'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'Content-Disposition': `attachment; filename="${filename}.docx"`,
             },
           })
         } catch (error) {
@@ -164,7 +231,7 @@ export async function GET(
           return new NextResponse(pdfBuffer, {
             headers: {
               'Content-Type': 'text/html',
-              'Content-Disposition': `attachment; filename="${filename}.html"`,
+              'Content-Disposition': `attachment; filename="${filename}_print.html"`,
             },
           })
         } catch (error) {
